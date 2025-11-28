@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Task Dashboard</title>
+
+		<!-- Bootstrap CSS -->
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+	</head>
+	<body class="bg-light">
+		<nav class="navbar navbar-dark bg-dark px-3">
+			<span class="navbar-brand">Task Manager</span>
+			<span>
+				Logged in as {{ current_user.username }}
+				<a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-light ms-3">Logout</a>
+			</span>
+		</nav>
+
+		<div class="container mt-4">
+			<!-- TABS -->
+			<ul class="nav nav-tabs" id="dashboardTabs">
+				<li class="nav-item">
+					<a class="nav-link active" data-bs-toggle="tab" href="#today">Today's Tasks</a>
+				</li>
+
+				<li class="nav-item">
+					<a class="nav-link" data-bs-toggle="tab" href="#add">Add Task</a>
+				</li>
+
+				<li class="nav-item">
+					<a class="nav-link" data-bs-toggle="tab" href="#templates">Templates</a>
+				</li>
+
+				<li class="nav-item">
+					<a class="nav-link" data-bs-toggle="tab" href="#upcoming">Upcoming</a>
+				</li>
+
+				<li class="nav-item">
+					<a class="nav-link" data-bs-toggle="tab" href="#history">History</a>
+				</li>
+			</ul>
+
+			<!-- TAB CONTENT -->
+			<div class="tab-content mt-4">
+				<div class="tab-pane fade show active" id="today">
+					<h3>Today's Tasks</h3>
+
+					<!-- Progress -->
+					{% set total = tasks|length %} {% set done = tasks|selectattr('done')|list|length %} {% if total > 0 %} {% set percent = (done / total * 100) | round(0) %} {% else %} {% set percent = 0 %} {% endif %}
+
+					<div class="mb-4">
+						<h5>Progress: {{ done }}/{{ total }}</h5>
+						<div class="progress">
+							<div class="progress-bar bg-success" style="width: {{ percent }}%">{{ percent }}%</div>
+						</div>
+					</div>
+
+					<form method="POST">
+						<div class="row">
+							{% for task in tasks %}
+							<div class="col-md-6">
+								<div class="card shadow-sm mb-3">
+									<div class="card-body">
+										<div class="form-check">
+											<input class="form-check-input" type="checkbox" name="done-{{ task.id }}" {% if task.done %}checked{% endif %} />
+											<label class="form-check-label fw-bold">{{ task.name }}</label>
+										</div>
+
+										<textarea name="description-{{ task.id }}" class="form-control mt-2" placeholder="Description">{{ task.description }}</textarea>
+
+										{% if task.done %}
+										<div class="text-success mt-2">Completed at: {{ task.completed_at }}</div>
+										{% endif %}
+									</div>
+								</div>
+							</div>
+							{% endfor %}
+						</div>
+
+						<button class="btn btn-primary">Save Changes</button>
+					</form>
+				</div>
+				<div class="tab-pane fade" id="add">
+					<h3>Add Task</h3>
+
+					<form method="POST" action="{{ url_for('add_task') }}">
+						<div class="mb-3">
+							<label>Task Name</label>
+							<input type="text" name="name" class="form-control" required />
+						</div>
+
+						<div class="mb-3">
+							<label>Description</label>
+							<textarea name="description" class="form-control"></textarea>
+						</div>
+
+						<button class="btn btn-success">Add Task</button>
+					</form>
+				</div>
+				<div class="tab-pane fade" id="templates">
+					<h3>Create Template</h3>
+
+					<form method="POST" action="{{ url_for('create_template') }}">
+						<div class="mb-3">
+							<label>Template Name</label>
+							<input type="text" name="name" class="form-control" required />
+						</div>
+
+						<div class="mb-3">
+							<label>Description</label>
+							<textarea name="description" class="form-control"></textarea>
+						</div>
+
+						<div class="mb-3">
+							<label>Frequency</label>
+							<select name="frequency" class="form-control" id="freq">
+								<option value="daily">Daily</option>
+								<option value="weekly">Weekly</option>
+								<option value="monthly">Monthly</option>
+								<option value="date">Specific Date</option>
+							</select>
+						</div>
+
+						<!-- Weekly -->
+						<div id="weeklyInputs" class="d-none">
+							<label>Select Days</label>
+							<div class="d-flex flex-wrap gap-2">
+								{% for d in ["mon","tue","wed","thu","fri","sat","sun"] %}
+								<label><input type="checkbox" name="weekdays" value="{{ d }}" /> {{ d }}</label>
+								{% endfor %}
+							</div>
+						</div>
+
+						<!-- Monthly -->
+						<div id="monthlyInputs" class="d-none mt-3">
+							<label>Day of the month</label>
+							<input type="number" name="day_of_month" class="form-control" min="1" max="31" />
+						</div>
+
+						<!-- Date -->
+						<div id="dateInputs" class="d-none mt-3">
+							<label>Specific date</label>
+							<input type="date" name="specific_date" class="form-control" />
+						</div>
+
+						<button class="btn btn-primary mt-3">Create Template</button>
+					</form>
+				</div>
+				<div class="tab-pane fade" id="templates">
+					<h3>Create Template</h3>
+
+					<form method="POST" action="{{ url_for('create_template') }}">
+						<div class="mb-3">
+							<label>Template Name</label>
+							<input type="text" name="name" class="form-control" required />
+						</div>
+
+						<div class="mb-3">
+							<label>Description</label>
+							<textarea name="description" class="form-control"></textarea>
+						</div>
+
+						<div class="mb-3">
+							<label>Frequency</label>
+							<select name="frequency" class="form-control" id="freq">
+								<option value="daily">Daily</option>
+								<option value="weekly">Weekly</option>
+								<option value="monthly">Monthly</option>
+								<option value="date">Specific Date</option>
+							</select>
+						</div>
+
+						<!-- Weekly -->
+						<div id="weeklyInputs" class="d-none">
+							<label>Select Days</label>
+							<div class="d-flex flex-wrap gap-2">
+								{% for d in ["mon","tue","wed","thu","fri","sat","sun"] %}
+								<label><input type="checkbox" name="weekdays" value="{{ d }}" /> {{ d }}</label>
+								{% endfor %}
+							</div>
+						</div>
+
+						<!-- Monthly -->
+						<div id="monthlyInputs" class="d-none mt-3">
+							<label>Day of the month</label>
+							<input type="number" name="day_of_month" class="form-control" min="1" max="31" />
+						</div>
+
+						<!-- Date -->
+						<div id="dateInputs" class="d-none mt-3">
+							<label>Specific date</label>
+							<input type="date" name="specific_date" class="form-control" />
+						</div>
+
+						<button class="btn btn-primary mt-3">Create Template</button>
+					</form>
+				</div>
+				<div class="tab-pane fade" id="upcoming">
+					<h3 class="mb-3">Upcoming Tasks (Next 7 Days)</h3>
+
+					<ul class="list-group">
+						{% for d, tmpl in upcoming %}
+						<li class="list-group-item d-flex justify-content-between align-items-center">
+							<div class="d-flex align-items-center">
+								<span class="text-primary me-3 fs-5">⏳</span>
+								<span class="fw-semibold">{{ tmpl.name }}</span>
+							</div>
+
+							<span class="badge bg-secondary rounded-pill"> {{ d }} </span>
+						</li>
+						{% endfor %} {% if upcoming|length == 0 %}
+						<li class="list-group-item text-muted text-center">No upcoming tasks</li>
+						{% endif %}
+					</ul>
+				</div>
+
+				<div class="tab-pane fade" id="history">
+					<h3 class="mb-3">Task History</h3>
+
+					<div class="accordion" id="historyAcc">
+						{% for date, items in tasks_by_day.items() %}
+						<div class="accordion-item">
+							<h2 class="accordion-header" id="h{{ loop.index }}">
+								<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c{{ loop.index }}">{{ date }}</button>
+							</h2>
+
+							<div id="c{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#historyAcc">
+								<div class="accordion-body">
+									{% for task in items %}
+									<div class="d-flex align-items-center mb-2">
+										<!-- Status icon -->
+										{% if task.done %}
+										<span class="text-success me-2 fs-5">✔</span>
+										{% else %}
+										<span class="text-danger me-2 fs-5">✘</span>
+										{% endif %}
+
+										<!-- Task name -->
+										<span class="fw-semibold">{{ task.name }}</span>
+									</div>
+									{% endfor %}
+								</div>
+							</div>
+						</div>
+						{% endfor %}
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+		<script>
+			// Show/hide template fields
+			const freq = document.getElementById("freq");
+			const weekly = document.getElementById("weeklyInputs");
+			const monthly = document.getElementById("monthlyInputs");
+			const dateinp = document.getElementById("dateInputs");
+
+			freq.addEventListener("change", () => {
+				weekly.classList.add("d-none");
+				monthly.classList.add("d-none");
+				dateinp.classList.add("d-none");
+
+				if (freq.value === "weekly") weekly.classList.remove("d-none");
+				if (freq.value === "monthly") monthly.classList.remove("d-none");
+				if (freq.value === "date") dateinp.classList.remove("d-none");
+			});
+		</script>
+	</body>
+</html>

@@ -13,7 +13,8 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = str(os.getenv('SECRET_KEY'))
-app.config['SQLALCHEMY_DATABASE_URI'] = str(os.getenv('SQLALCHEMY_DATABASE_URI'))
+# app.config['SQLALCHEMY_DATABASE_URI'] = str(os.getenv('SQLALCHEMY_DATABASE_URI'))
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///tasks.db"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -172,33 +173,33 @@ def logout():
     return redirect(url_for('login'))
 
 
-@app.route('/', methods=['GET', 'POST'])
-@login_required
-def index():
-    create_daily_tasks(current_user)
+# @app.route('/', methods=['GET', 'POST'])
+# @login_required
+# def index():
+#     create_daily_tasks(current_user)
 
-    today = date.today()
-    tasks = TaskInstance.query.filter_by(user_id=current_user.id, date=today).all()
+#     today = date.today()
+#     tasks = TaskInstance.query.filter_by(user_id=current_user.id, date=today).all()
 
-    if request.method == 'POST':
-        for task in tasks:
-            # Check if user marked it as done in the form
-            if f'done-{task.id}' in request.form:
-                if not task.done:  # only update if it wasn't done before
-                    task.done = True
-                    task.completed_at = datetime.now()
-                # Always update description, even if previously done
-                task.description = request.form.get(f'description-{task.id}', task.description)
-            else:
-                # Optional: uncheck to mark incomplete (if you allow)
-                # task.done = False
-                # task.completed_at = None
-                pass
+#     if request.method == 'POST':
+#         for task in tasks:
+#             # Check if user marked it as done in the form
+#             if f'done-{task.id}' in request.form:
+#                 if not task.done:  # only update if it wasn't done before
+#                     task.done = True
+#                     task.completed_at = datetime.now()
+#                 # Always update description, even if previously done
+#                 task.description = request.form.get(f'description-{task.id}', task.description)
+#             else:
+#                 # Optional: uncheck to mark incomplete (if you allow)
+#                 # task.done = False
+#                 # task.completed_at = None
+#                 pass
 
-        db.session.commit()
-        return redirect(url_for('index'))
+#         db.session.commit()
+#         return redirect(url_for('index'))
 
-    return render_template('index.html', tasks=tasks)
+#     return render_template('index.html', tasks=tasks)
 
 
 
@@ -279,6 +280,87 @@ def create_template():
 
     return render_template('create_template.html')
 
+def get_upcoming_tasks(user, days_ahead=7):
+    today = date.today()
+    upcoming = []
+
+    templates = TaskTemplate.query.filter_by(user_id=user.id).all()
+
+    for tmpl in templates:
+        for offset in range(1, days_ahead + 1):
+            d = today + dt.timedelta(days=offset)
+            weekday = d.strftime("%a").lower()[:3]
+
+            if tmpl.frequency == "daily":
+                upcoming.append((d, tmpl))
+
+            elif tmpl.frequency == "weekly":
+                if tmpl.weekdays:
+                    days = tmpl.weekdays.split(",")
+                    if weekday in days:
+                        upcoming.append((d, tmpl))
+
+            elif tmpl.frequency == "monthly":
+                if tmpl.day_of_month == d.day:
+                    upcoming.append((d, tmpl))
+
+            elif tmpl.frequency == "date":
+                if tmpl.specific_date == d:
+                    upcoming.append((d, tmpl))
+
+    # Sort by date
+    upcoming.sort(key=lambda x: x[0])
+    return upcoming
+
+
+@app.route('/', methods=['GET', 'POST'])
+@login_required
+def index():
+    create_daily_tasks(current_user)
+
+    today = date.today()
+    tasks = TaskInstance.query.filter_by(
+        user_id=current_user.id, 
+        date=today
+    ).all()
+
+    # HISTORY (grouped by date)
+    all_tasks = TaskInstance.query.filter_by(
+        user_id=current_user.id
+    ).order_by(TaskInstance.date.desc()).all()
+
+    tasks_by_day = {}
+    for t in all_tasks:
+        tasks_by_day.setdefault(t.date, []).append(t)
+
+    # TEMPLATES
+    templates = TaskTemplate.query.filter_by(
+        user_id=current_user.id
+    ).all()
+
+    # Handle marking tasks done
+    if request.method == 'POST':
+        for task in tasks:
+            if f"done-{task.id}" in request.form:
+                if not task.done:
+                    task.done = True
+                    task.completed_at = datetime.now()
+            task.description = request.form.get(
+                f"description-{task.id}",
+                task.description,
+            )
+        db.session.commit()
+        return redirect(url_for("index"))
+
+    upcoming = get_upcoming_tasks(current_user)
+
+    return render_template(
+        'dashboard.html',
+        tasks=tasks,
+        templates=templates,
+        tasks_by_day=tasks_by_day,
+        upcoming=upcoming,
+    )
 
 if __name__ == '__main__':
     app.run()
