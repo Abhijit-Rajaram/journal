@@ -1,0 +1,52 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.pdb
+*.egg-info/
+*.egg
+dist/
+build/
+pip-wheel-metadata/
+
+# ---- Virtual Environments ----
+venv/
+.venv/
+env/
+ENV/
+
+# ---- Flask instance folder ----
+# This contains local SQLite and config — DO NOT upload to Git
+instance/
+
+# ---- Logs ----
+*.log
+
+# ---- Environment Variables ----
+.env
+.env.*
+*.secret*
+
+# ---- Databases ----
+*.sqlite
+*.sqlite3
+*.db
+
+# ---- Flask-Migrate ----
+migrations/__pycache__/
+migrations/versions/*.pyc
+# Keep migrations/ folder itself (important!)
+
+# ---- OS Files ----
+.DS_Store
+Thumbs.db
+
+# ---- IDE ----
+.vscode/
+.idea/
+
+# ---- Other ----
+**/__pycache__/
+.render/

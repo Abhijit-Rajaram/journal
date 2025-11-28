@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Add Extra Task</h2>
+
+<form method="POST">
+    <div class="mb-3">
+        <label>Task Name</label>
+        <input class="form-control" type="text" name="name" required>
+    </div>
+
+    <div class="mb-3">
+        <label>Description</label>
+        <input class="form-control" type="text" name="description">
+    </div>
+
+    <button class="btn btn-primary">Add Task</button>
+</form>
+
+{% endblock %}
